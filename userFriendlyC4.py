@@ -1,3 +1,4 @@
+!pip install tqdm
 import copy
 import time
 import random
@@ -41,9 +42,94 @@ def boardEvalLessSimple(b):
       r -= 1
   return score
 
+def boardEvalLeastSimple(b):
+    score = 0
+    for c in range(0, 7):
+        for r in range(0, 6):
+            if b[r][c] != " ":
+                if b[r][c] == "X":
+                    symbol, opposing_symbol = "X", "O"
+                else:
+                    symbol, opposing_symbol = "O", "X"
+                num_horiz, num_vert, num_diag_ne_sw, num_diag_nw_se = 0, 0, 0, 0
+
+                scoreHoriz = 0
+                rightBound = c + 3 if c + 3 <= 6 else 6
+                leftBound = c - 3 if c - 3 >= 0 else 0
+                column = c + 1
+                while column <= rightBound and b[r][column] != opposing_symbol:
+                    scoreHoriz += 1
+                    column += 1
+                column = c - 1
+                while column >= leftBound and b[r][column] != opposing_symbol:
+                    scoreHoriz += 1
+                    column -= 1
+                num_horiz = scoreHoriz - 2 if scoreHoriz >= 3 else 0
+
+                scoreVert = 0
+                lowerBound = r - 3 if r - 3 >= 0 else 0
+                upperBound = r + 3 if r + 3 <= 5 else 5
+                row = r - 1
+                while row >= lowerBound and b[row][c] != opposing_symbol:
+                    scoreVert += 1
+                    row -= 1
+                row = r + 1
+                while row <= upperBound and b[row][c] != opposing_symbol:
+                    scoreVert += 1
+                    row += 1
+                num_vert = scoreVert - 2 if scoreVert >= 3 else 0
+
+
+                scoreNESW, scoreNWSE = 0, 0
+                topBound = r - 3 if r - 3 >= 0 else 0
+                bottomBound = r + 3 if r + 3 < 6 else 5
+                leftBound = c - 3 if c - 3 >= 0 else 0
+                rightBound = c + 3 if c + 3 < 7 else 6
+
+                # NESW
+                row = r - 1
+                column = c + 1
+                while row >= topBound and column <= rightBound and b[row][column] != opposing_symbol:
+                    scoreNESW += 1
+                    row -= 1
+                    column += 1
+                row = r + 1
+                column = c - 1
+                while row <= bottomBound and column >= leftBound and b[row][column] != opposing_symbol:
+                    scoreNESW += 1
+                    row += 1
+                    column -= 1
+                num_diag_ne_sw = scoreNESW - 2 if scoreNESW >= 3 else 0
+
+                # NWSE
+                row = r - 1
+                column = c - 1
+                while row >= topBound and column >= leftBound and b[row][column] != opposing_symbol:
+                    scoreNWSE += 1
+                    row -= 1
+                    column -= 1
+                row = r + 1
+                column = c + 1
+                while row <= bottomBound and column <= rightBound and b[row][column] != opposing_symbol:
+                    scoreNWSE += 1
+                    row += 1
+                    column += 1
+                num_diag_nw_se = scoreNWSE - 2 if scoreNWSE >= 3 else 0
+
+                if (symbol == "X"):
+                    score += num_horiz + num_vert + num_diag_ne_sw + num_diag_nw_se
+                else:
+                    score -= num_horiz + num_vert + num_diag_ne_sw + num_diag_nw_se
+    return score
+
 def navTree(b, depth, evalAlgo):
     if depth == 0:
-        return (boardEvalLessSimple(b) if evalAlgo == 1 else boardEvalSimple(b))
+        if evalAlgo == 0:
+            return boardEvalSimple(b)
+        elif evalAlgo == 1:
+            return boardEvalLessSimple(b)
+        else:
+            return boardEvalLeastSimple(b)
     else:
         bv = -998
         moves = getlegalMoves(b)
@@ -165,6 +251,7 @@ if __name__ == "__main__":
     random
     smart
     smarter
+    smartest
     '''
     print("Hello, welcome to our Connect Four AI Project")
     print("We currently have four different player modes:\n")
@@ -172,14 +259,15 @@ if __name__ == "__main__":
     print("2) Random - a bot makes random moves across the board")
     print("3) Smart - a bot uses a minimax algorithm generated with a column-only board evaluation routine")
     print("4) Smarter - a bot uses a minimax algorithm generated with a discrete based board evaluation that\n             evaluates the ways to win at each board location")
+    print("5) Smartest - a bot uses a minimax algorithm generated with a discrete based board evaluation that\n            evaluates the ways to win at each board locationand piece activity")
     player1 = input("Enter the mode for Player 1 (Xs) as it appears in the above description *CASE SENSITIVE:\n").lower()
     treeDepth1 = 0
     if "smart" in player1:
-        treeDepth1 = int(input(f"Enter the tree depth for the {player1} algorithm:\n"))
+        treeDepth1 = int(input(f"Enter the tree depth for the \'{player1}\' algorithm:\n"))
     player2 = input("Enter the mode for Player 2 (Os) as it appears in the above description *CASE SENSITIVE:\n").lower()
     treeDepth2 = 0
     if "smart" in player2:
-        treeDepth2 = int(input(f"Enter the tree depth for the {player2} algorithm:\n"))
+        treeDepth2 = int(input(f"Enter the tree depth for the \'{player2}\' algorithm:\n"))
     games = int(input("Enter the number of games you want to play:\n"))
     print()
     playerDict = {'X': player1, 'O': player2}
@@ -192,7 +280,7 @@ if __name__ == "__main__":
             if(playerDict[symbol] == "random"):
                 c = random.choice(getlegalMoves(board))
                 r = move(board, c, symbol)
-            elif(playerDict[symbol] == "smart" or playerDict[symbol] == "smarter"):
+            elif("smart" in playerDict[symbol]):
                 moves = getlegalMoves(board)
                 random.shuffle(moves)
                 bestScore = -100000
@@ -202,8 +290,8 @@ if __name__ == "__main__":
                     if(symbol == 'O'):
                         b2 = [[('O' if (y == 'X') else ('X' if y == 'O' else ' ')) for y in x] for x in [r[:] for r in b2]]
                     move(b2, m, 'X')
-                    score = navTree(b2, (treeDepth1 if playerDict[symbol] == player1 else treeDepth2), 
-                                    (0 if playerDict[symbol] == "smart" else 1))
+
+                    score = navTree(b2, 3, (0 if playerDict[symbol] == "smart" else (1 if playerDict[symbol] == "smarter" else 2)))
                     if score > bestScore:
                         bestScore = score
                         bestMove = m
