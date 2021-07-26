@@ -122,7 +122,7 @@ def boardEvalLeastSimple(b):
                     score -= num_horiz + num_vert + num_diag_ne_sw + num_diag_nw_se
     return score
 
-def navTree(b, depth, evalAlgo):
+def navTree(b, depth, evalAlgo, bestSibling):
     if depth == 0:
         if evalAlgo == 0:
             return boardEvalSimple(b)
@@ -145,7 +145,9 @@ def navTree(b, depth, evalAlgo):
                 diagonalWinTest(b2, r, c, 'X')):
                 return -1000
             #search the tree
-            val = navTree(b2, depth-1, evalAlgo)
+            val = navTree(b2, depth-1, evalAlgo, bv)
+            if -1*val < bestSibling:
+                return -999
             #update the best value
             bv = val if val > bv else bv
         return -1 * bv
@@ -291,7 +293,7 @@ if __name__ == "__main__":
                         b2 = [[('O' if (y == 'X') else ('X' if y == 'O' else ' ')) for y in x] for x in [r[:] for r in b2]]
                     move(b2, m, 'X')
 
-                    score = navTree(b2, 3, (0 if playerDict[symbol] == "smart" else (1 if playerDict[symbol] == "smarter" else 2)))
+                    score = navTree(b2, 3, (0 if playerDict[symbol] == "smart" else (1 if playerDict[symbol] == "smarter" else 2)), bestScore)
                     if score > bestScore:
                         bestScore = score
                         bestMove = m
