@@ -1,4 +1,4 @@
-!pip install tqdm
+# !pip install tqdm
 import copy
 import time
 import random
@@ -216,12 +216,14 @@ def boardEvalGenius(b):
 
 def navTree(b, depth, evalAlgo, bestSibling):
     if depth == 0:
-        if evalAlgo == 0:
+        if evalAlgo == "smart":
             return boardEvalSimple(b)
-        elif evalAlgo == 1:
+        elif evalAlgo == "smarter":
             return boardEvalLessSimple(b)
-        else:
+        elif evalAlgo == "smartest":
             return boardEvalLeastSimple(b)
+        else:
+            return boardEvalGenius(b)
     else:
         bv = -998
         moves = getlegalMoves(b)
@@ -363,6 +365,7 @@ if __name__ == "__main__":
         symbol = 'X'
         moveCounter = 0
         while True:
+            depth = treeDepth1 if symbol == 'X' else treeDepth2
             if(playerDict[symbol] == "random"):
                 c = random.choice(getlegalMoves(board))
                 r = move(board, c, symbol)
@@ -378,7 +381,7 @@ if __name__ == "__main__":
                     move(b2, m, 'X')
 
                     with ThreadPoolExecutor(max_workers=7) as executor:
-                        threads[m] = executor.submit(navTree, b2, 3, playerDict[symbol], bestScore)
+                        threads[m] = executor.submit(navTree, b2, depth, playerDict[symbol], bestScore)
                     
                 for m in moves:
                     score = threads[m].result()
@@ -407,14 +410,3 @@ if __name__ == "__main__":
     print("\nWins: ", winDict['X'])
     print("Losses: ", winDict['O'])
     print("Ties: ", games - winDict['X'] - winDict['O'])
-
-
-
-
-
-
-
-
-
-
-
